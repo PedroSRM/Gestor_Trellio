@@ -82,3 +82,130 @@ def mis_tareas(request):
     return render(request, 'tableros/mis_tareas.html', {
         'tarjetas_asignadas': tarjetas_asignadas
     })
+
+# ==================== CRUD TABLEROS ====================
+
+@login_required
+def crear_tablero(request):
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre')
+        descripcion = request.POST.get('descripcion', '')
+        if nombre:
+            Tablero.objects.create(
+                nombre=nombre,
+                descripcion=descripcion,
+                creado_por=request.user
+            )
+        return redirect('tableros:inicio')
+    return render(request, 'tableros/crear_tablero.html')
+
+
+@login_required
+def editar_tablero(request, tablero_id):
+    if request.user.is_superuser:
+        tablero = get_object_or_404(Tablero, id=tablero_id)
+    else:
+        tablero = get_object_or_404(Tablero, id=tablero_id, creado_por=request.user)
+
+    if request.method == 'POST':
+        tablero.nombre = request.POST.get('nombre', tablero.nombre)
+        tablero.descripcion = request.POST.get('descripcion', tablero.descripcion)
+        tablero.save()
+        return redirect('tableros:detalle_tablero', tablero_id=tablero.id)
+    return render(request, 'tableros/editar_tablero.html', {'tablero': tablero})
+
+
+@login_required
+def eliminar_tablero(request, tablero_id):
+    if request.user.is_superuser:
+        tablero = get_object_or_404(Tablero, id=tablero_id)
+    else:
+        tablero = get_object_or_404(Tablero, id=tablero_id, creado_por=request.user)
+
+    if request.method == 'POST':
+        tablero.delete()
+        return redirect('tableros:inicio')
+    return render(request, 'tableros/eliminar_tablero.html', {'tablero': tablero})
+
+
+# ==================== CRUD LISTAS ====================
+
+@login_required
+def crear_lista(request, tablero_id):
+    if request.user.is_superuser:
+        tablero = get_object_or_404(Tablero, id=tablero_id)
+    else:
+        tablero = get_object_or_404(Tablero, id=tablero_id, creado_por=request.user)
+
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre')
+        if nombre:
+            posicion = tablero.listas.count()
+            Lista.objects.create(nombre=nombre, tablero=tablero, posicion=posicion)
+        return redirect('tableros:detalle_tablero', tablero_id=tablero.id)
+    return render(request, 'tableros/crear_lista.html', {'tablero': tablero})
+
+
+@login_required
+def eliminar_lista(request, lista_id):
+    lista = get_object_or_404(Lista, id=lista_id)
+    tablero_id = lista.tablero.id
+
+    if not request.user.is_superuser and lista.tablero.creado_por != request.user:
+        return HttpResponseForbidden("No tienes permiso para realizar esta acción.")
+
+    if request.method == 'POST':
+        lista.delete()
+    return redirect('tableros:detalle_tablero', tablero_id=tablero_id)
+
+
+# ==================== CRUD TARJETAS ====================
+
+@login_required
+def crear_tarjeta(request, lista_id):
+    lista = get_object_or_404(Lista, id=lista_id)
+
+    if not request.user.is_superuser and lista.tablero.creado_por != request.user:
+        return HttpResponseForbidden("No tienes permiso para realizar esta acción.")
+
+    if request.method == 'POST':
+        titulo = request.POST.get('titulo')
+        descripcion = request.POST.get('descripcion', '')
+        if titulo:
+            posicion = lista.tarjetas.count()
+            Tarjeta.objects.create(
+                titulo=titulo,
+                descripcion=descripcion,
+                lista=lista,
+                posicion=posicion
+            )
+        return redirect('tableros:detalle_tablero', tablero_id=lista.tablero.id)
+    return render(request, 'tableros/crear_tarjeta.html', {'lista': lista})
+
+
+@login_required
+def editar_tarjeta(request, tarjeta_id):
+    tarjeta = get_object_or_404(Tarjeta, id=tarjeta_id)
+
+    if not request.user.is_superuser and tarjeta.lista.tablero.creado_por != request.user:
+        return HttpResponseForbidden("No tienes permiso para realizar esta acción.")
+
+    if request.method == 'POST':
+        tarjeta.titulo = request.POST.get('titulo', tarjeta.titulo)
+        tarjeta.descripcion = request.POST.get('descripcion', tarjeta.descripcion)
+        tarjeta.save()
+        return redirect('tableros:detalle_tablero', tablero_id=tarjeta.lista.tablero.id)
+    return render(request, 'tableros/editar_tarjeta.html', {'tarjeta': tarjeta})
+
+
+@login_required
+def eliminar_tarjeta(request, tarjeta_id):
+    tarjeta = get_object_or_404(Tarjeta, id=tarjeta_id)
+    tablero_id = tarjeta.lista.tablero.id
+
+    if not request.user.is_superuser and tarjeta.lista.tablero.creado_por != request.user:
+        return HttpResponseForbidden("No tienes permiso para realizar esta acción.")
+
+    if request.method == 'POST':
+        tarjeta.delete()
+    return redirect('tableros:detalle_tablero', tablero_id=tablero_id)
