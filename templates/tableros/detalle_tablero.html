@@ -88,8 +88,25 @@
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script>
     const csrfToken = '{{ csrf_token }}';
-    const url = "{% url 'tableros:actualizar_posicion' %}";
+    const urlPosicion = "{% url 'tableros:actualizar_posicion' %}";
+    const tableroId = {{ tablero.id }};
 
+    // WebSocket
+    const ws = new WebSocket(`ws://${window.location.host}/ws/tablero/${tableroId}/`);
+
+    ws.onopen = function() {
+        console.log('WebSocket conectado');
+    };
+
+    ws.onmessage = function(event) {
+        console.log('Mensaje recibido:', event.data);
+        const data = JSON.parse(event.data);
+        if (data.tipo === 'posicion_actualizada' || data.tipo === 'tarjeta_asignada') {
+            location.reload();
+        }
+    };
+
+    // Drag & Drop
     document.querySelectorAll('.lista-columna').forEach(columna => {
         new Sortable(columna, {
             group: 'tarjetas',
@@ -108,13 +125,16 @@
                     });
                 });
 
-                fetch(url, {
+                fetch(urlPosicion, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRFToken': csrfToken
                     },
-                    body: JSON.stringify({ tarjetas: datos })
+                    body: JSON.stringify({
+                        tarjetas: datos,
+                        tablero_id: tableroId
+                    })
                 });
             }
         });

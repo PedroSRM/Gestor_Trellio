@@ -10,6 +10,9 @@ import json
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+
 
 def get_tableros_para_usuario(usuario):
     """
@@ -249,11 +252,28 @@ def actualizar_posicion(request):
     try:
         data = json.loads(request.body)
         tarjetas = data.get('tarjetas', [])
+        tablero_id = data.get('tablero_id')
+
         for item in tarjetas:
             Tarjeta.objects.filter(id=item['id']).update(
                 posicion=item['posicion'],
                 lista_id=item['lista_id']
             )
+
+        # Notificar a todos los usuarios conectados al tablero
+        if tablero_id:
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f'tablero_{tablero_id}',
+                {
+                    'type': 'tablero_actualizado',
+                    'data': {
+                        'tipo': 'posicion_actualizada',
+                        'tarjetas': tarjetas
+                    }
+                }
+            )
+
         return JsonResponse({'status': 'ok'})
     except Exception as e:
         return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=400)
