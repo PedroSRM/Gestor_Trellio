@@ -23,4 +23,6 @@ urlpatterns = [
     path('tarjeta/<int:tarjeta_id>/editar/', views.editar_tarjeta, name='editar_tarjeta'),
     path('tarjeta/<int:tarjeta_id>/eliminar/', views.eliminar_tarjeta, name='eliminar_tarjeta'),
     path('tarjeta/<int:tarjeta_id>/asignar/', views.asignar_tarjeta, name='asignar_tarjeta'),
+
+    path('tarjeta/<int:tarjeta_id>/estado/', views.cambiar_estado_tarjeta, name='cambiar_estado_tarjeta'),
 ]

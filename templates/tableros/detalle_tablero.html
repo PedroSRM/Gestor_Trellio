@@ -27,10 +27,36 @@
         {% for tarjeta in lista.tarjetas.all %}
         <div class="tarjeta-item">
             <div class="fw-bold">{{ tarjeta.titulo }}</div>
-            {% if tarjeta.asignado_a %}
-                <small class="text-muted">👤 {{ tarjeta.asignado_a.username }}</small>
+            {% if tarjeta.descripcion %}
+                <p class="text-muted small mb-1">{{ tarjeta.descripcion }}</p>
             {% endif %}
-            <div class="d-flex gap-1 mt-2 flex-wrap">
+
+            <!-- Badge de estado -->
+            {% if tarjeta.estado == 'por_hacer' %}
+                <span class="badge bg-secondary">Por Hacer</span>
+            {% elif tarjeta.estado == 'en_progreso' %}
+                <span class="badge bg-warning text-dark">En Progreso</span>
+            {% elif tarjeta.estado == 'terminado' %}
+                <span class="badge bg-success">Terminado</span>
+            {% endif %}
+
+            {% if tarjeta.asignado_a %}
+                <div><small class="text-muted">👤 {{ tarjeta.asignado_a.username }}</small></div>
+            {% endif %}
+
+            <!-- Botones de cambio de estado — visibles para Admin y para el usuario asignado -->
+            {% if es_admin or tarjeta.asignado_a == user %}
+            <form method="post" action="{% url 'tableros:cambiar_estado_tarjeta' tarjeta.id %}" class="d-flex gap-1 mt-2 flex-wrap">
+                {% csrf_token %}
+                <button name="estado" value="por_hacer" class="btn btn-xs btn-outline-secondary" style="font-size:0.7rem;">Por Hacer</button>
+                <button name="estado" value="en_progreso" class="btn btn-xs btn-outline-warning" style="font-size:0.7rem;">En Progreso</button>
+                <button name="estado" value="terminado" class="btn btn-xs btn-outline-success" style="font-size:0.7rem;">Terminado</button>
+            </form>
+            {% endif %}
+
+            <!-- Botones de gestión — solo Admin o dueño del tablero -->
+            {% if es_admin or tablero.creado_por == user %}
+            <div class="d-flex gap-1 mt-1 flex-wrap">
                 <a href="{% url 'tableros:editar_tarjeta' tarjeta.id %}" class="btn btn-xs btn-outline-secondary" style="font-size:0.75rem;">Editar</a>
                 <form method="post" action="{% url 'tableros:eliminar_tarjeta' tarjeta.id %}">
                     {% csrf_token %}
@@ -40,6 +66,7 @@
                 <a href="{% url 'tableros:asignar_tarjeta' tarjeta.id %}" class="btn btn-xs btn-outline-warning" style="font-size:0.75rem;">Asignar</a>
                 {% endif %}
             </div>
+            {% endif %}
         </div>
         {% empty %}
         <p class="text-muted small">Sin tarjetas</p>

@@ -209,3 +209,17 @@ def eliminar_tarjeta(request, tarjeta_id):
     if request.method == 'POST':
         tarjeta.delete()
     return redirect('tableros:detalle_tablero', tablero_id=tablero_id)
+
+@login_required
+def cambiar_estado_tarjeta(request, tarjeta_id):
+    tarjeta = get_object_or_404(Tarjeta, id=tarjeta_id)
+
+    if not request.user.is_superuser and tarjeta.asignado_a != request.user:
+        return HttpResponseForbidden("No tienes permiso para realizar esta acción.")
+
+    if request.method == 'POST':
+        nuevo_estado = request.POST.get('estado')
+        if nuevo_estado in ['por_hacer', 'en_progreso', 'terminado']:
+            tarjeta.estado = nuevo_estado
+            tarjeta.save()
+    return redirect('tableros:detalle_tablero', tablero_id=tarjeta.lista.tablero.id)

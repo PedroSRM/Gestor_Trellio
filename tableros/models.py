@@ -47,6 +47,16 @@ class Tarjeta(models.Model):
         blank=True,
         related_name='tarjetas_asignadas'
     )
+    ESTADO_CHOICES = [
+        ('por_hacer', 'Por Hacer'),
+        ('en_progreso', 'En Progreso'),
+        ('terminado', 'Terminado'),
+    ]
+    estado = models.CharField(
+        max_length=20,
+        choices=ESTADO_CHOICES,
+        default='por_hacer'
+    )
     posicion = models.PositiveIntegerField(default=0)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
