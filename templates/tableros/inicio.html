@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Inicio — Trellio{% endblock %}
+
+{% block contenido %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="text-white fw-bold">
+        {% if es_admin %}Panel del Administrador{% else %}Mis Tableros{% endif %}
+    </h4>
+    <a href="{% url 'tableros:crear_tablero' %}" class="btn btn-light fw-bold">+ Nuevo Tablero</a>
+</div>
+
+<div class="row g-3">
+    {% for tablero in tableros %}
+    <div class="col-sm-6 col-md-4 col-lg-3">
+        <a href="{% url 'tableros:detalle_tablero' tablero.id %}" class="text-decoration-none">
+            <div class="tablero-card">
+                <h5 class="fw-bold">{{ tablero.nombre }}</h5>
+                <small>Creado por: {{ tablero.creado_por.username }}</small>
+            </div>
+        </a>
+    </div>
+    {% empty %}
+    <p class="text-white">No hay tableros todavía. ¡Crea el primero!</p>
+    {% endfor %}
+</div>
+{% endblock %}

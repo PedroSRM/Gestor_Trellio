@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block titulo %}{{ tablero.nombre }} — Trellio{% endblock %}
+
+{% block contenido %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="text-white fw-bold">{{ tablero.nombre }}</h4>
+    {% if es_admin or tablero.creado_por == user %}
+    <div class="d-flex gap-2">
+        <a href="{% url 'tableros:editar_tablero' tablero.id %}" class="btn btn-sm btn-warning">Editar</a>
+        <a href="{% url 'tableros:eliminar_tablero' tablero.id %}" class="btn btn-sm btn-danger">Eliminar</a>
+    </div>
+    {% endif %}
+</div>
+
+<div class="columnas-container">
+    {% for lista in listas %}
+    <div class="lista-columna">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <strong>{{ lista.nombre }}</strong>
+            <form method="post" action="{% url 'tableros:eliminar_lista' lista.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-link text-danger p-0">✕</button>
+            </form>
+        </div>
+
+        {% for tarjeta in lista.tarjetas.all %}
+        <div class="tarjeta-item">
+            <div class="fw-bold">{{ tarjeta.titulo }}</div>
+            {% if tarjeta.asignado_a %}
+                <small class="text-muted">👤 {{ tarjeta.asignado_a.username }}</small>
+            {% endif %}
+            <div class="d-flex gap-1 mt-2 flex-wrap">
+                <a href="{% url 'tableros:editar_tarjeta' tarjeta.id %}" class="btn btn-xs btn-outline-secondary" style="font-size:0.75rem;">Editar</a>
+                <form method="post" action="{% url 'tableros:eliminar_tarjeta' tarjeta.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-xs btn-outline-danger" style="font-size:0.75rem;">Eliminar</button>
+                </form>
+                {% if es_admin %}
+                <a href="{% url 'tableros:asignar_tarjeta' tarjeta.id %}" class="btn btn-xs btn-outline-warning" style="font-size:0.75rem;">Asignar</a>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <p class="text-muted small">Sin tarjetas</p>
+        {% endfor %}
+
+        <a href="{% url 'tableros:crear_tarjeta' lista.id %}" class="btn btn-sm btn-light w-100 mt-2">+ Tarjeta</a>
+    </div>
+    {% empty %}
+    <p class="text-white">No hay listas todavía.</p>
+    {% endfor %}
+
+    <div style="min-width:272px;">
+        <a href="{% url 'tableros:crear_lista' tablero.id %}" class="btn btn-light w-100">+ Nueva Lista</a>
+    </div>
+</div>
+{% endblock %}

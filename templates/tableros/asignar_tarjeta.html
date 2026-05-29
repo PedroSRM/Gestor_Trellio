@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block titulo %}Asignar Tarjeta — Trellio{% endblock %}
+{% block contenido %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card p-4">
+            <h4 class="mb-3">Asignar "{{ tarjeta.titulo }}"</h4>
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label">Seleccionar Usuario</label>
+                    <select name="usuario_id" class="form-select">
+                        <option value="">-- Sin asignar --</option>
+                        {% for usuario in usuarios_normales %}
+                        <option value="{{ usuario.id }}" {% if tarjeta.asignado_a == usuario %}selected{% endif %}>
+                            {{ usuario.username }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-warning">Asignar</button>
+                    <a href="{% url 'tableros:detalle_tablero' tarjeta.lista.tablero.id %}" class="btn btn-secondary">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

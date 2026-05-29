@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block titulo %}Mis Tareas — Trellio{% endblock %}
+{% block contenido %}
+<h4 class="text-white fw-bold mb-4">Mis Tareas Asignadas</h4>
+<div class="row g-3">
+    {% for tarjeta in tarjetas_asignadas %}
+    <div class="col-md-4">
+        <div class="card p-3">
+            <h5>{{ tarjeta.titulo }}</h5>
+            <p class="text-muted small">{{ tarjeta.descripcion }}</p>
+            <small class="text-muted">📋 {{ tarjeta.lista.tablero.nombre }} → {{ tarjeta.lista.nombre }}</small>
+        </div>
+    </div>
+    {% empty %}
+    <p class="text-white">No tienes tareas asignadas todavía.</p>
+    {% endfor %}
+</div>
+{% endblock %}
