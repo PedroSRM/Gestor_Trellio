@@ -29,7 +29,10 @@
                     {% endif %}
                     <span class="text-white">{{ user.username }}</span>
                     <a href="{% url 'tableros:mis_tareas' %}" class="btn btn-sm btn-outline-light">Mis Tareas</a>
-                    <a href="/admin/logout/" class="btn btn-sm btn-outline-light">Cerrar Sesión</a>
+                    <form method="post" action="{% url 'logout' %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-light">Cerrar Sesión</button>
+                    </form>
                 {% endif %}
             </div>
         </div>
