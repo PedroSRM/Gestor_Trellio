@@ -15,7 +15,7 @@
 
 <div class="columnas-container">
     {% for lista in listas %}
-    <div class="lista-columna">
+    <div class="lista-columna" data-lista-id="{{ lista.id }}">
         <div class="d-flex justify-content-between align-items-center mb-2">
             <strong>{{ lista.nombre }}</strong>
             <form method="post" action="{% url 'tableros:eliminar_lista' lista.id %}">
@@ -25,7 +25,7 @@
         </div>
 
         {% for tarjeta in lista.tarjetas.all %}
-        <div class="tarjeta-item">
+        <div class="tarjeta-item" data-tarjeta-id="{{ tarjeta.id }}">
             <div class="fw-bold">{{ tarjeta.titulo }}</div>
             {% if tarjeta.descripcion %}
                 <p class="text-muted small mb-1">{{ tarjeta.descripcion }}</p>
@@ -82,4 +82,42 @@
         <a href="{% url 'tableros:crear_lista' tablero.id %}" class="btn btn-light w-100">+ Nueva Lista</a>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+    const csrfToken = '{{ csrf_token }}';
+    const url = "{% url 'tableros:actualizar_posicion' %}";
+
+    document.querySelectorAll('.lista-columna').forEach(columna => {
+        new Sortable(columna, {
+            group: 'tarjetas',
+            animation: 150,
+            draggable: '.tarjeta-item',
+            onEnd: function() {
+                const datos = [];
+                document.querySelectorAll('.lista-columna').forEach(col => {
+                    const listaId = col.dataset.listaId;
+                    col.querySelectorAll('.tarjeta-item').forEach((tarjeta, index) => {
+                        datos.push({
+                            id: tarjeta.dataset.tarjetaId,
+                            lista_id: listaId,
+                            posicion: index
+                        });
+                    });
+                });
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({ tarjetas: datos })
+                });
+            }
+        });
+    });
+</script>
 {% endblock %}

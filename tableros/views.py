@@ -6,6 +6,10 @@ from django.contrib.auth.models import User
 from django.http import HttpResponseForbidden
 from .models import Tablero, Lista, Tarjeta
 
+import json
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+
 
 def get_tableros_para_usuario(usuario):
     """
@@ -238,3 +242,18 @@ def registro(request):
     else:
         form = UserCreationForm()
     return render(request, 'auth/registro.html', {'form': form})
+
+@login_required
+@require_POST
+def actualizar_posicion(request):
+    try:
+        data = json.loads(request.body)
+        tarjetas = data.get('tarjetas', [])
+        for item in tarjetas:
+            Tarjeta.objects.filter(id=item['id']).update(
+                posicion=item['posicion'],
+                lista_id=item['lista_id']
+            )
+        return JsonResponse({'status': 'ok'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=400)

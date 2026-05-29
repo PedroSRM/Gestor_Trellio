@@ -27,4 +27,6 @@ urlpatterns = [
     path('tarjeta/<int:tarjeta_id>/estado/', views.cambiar_estado_tarjeta, name='cambiar_estado_tarjeta'),
 
     path('registro/', views.registro, name='registro'),
+
+    path('actualizar-posicion/', views.actualizar_posicion, name='actualizar_posicion'),
 ]
