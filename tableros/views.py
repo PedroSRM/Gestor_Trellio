@@ -1,3 +1,5 @@
+from urllib import request
+
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
@@ -5,6 +7,8 @@ from django.contrib.auth import login
 from django.contrib.auth.models import User
 from django.http import HttpResponseForbidden
 from .models import Tablero, Lista, Tarjeta
+
+from .models import Tablero, Lista, Tarjeta, Notificacion
 
 import json
 from django.http import JsonResponse
@@ -65,13 +69,34 @@ def asignar_tarjeta(request, tarjeta_id):
             usuario = get_object_or_404(User, id=usuario_id)
             tarjeta.asignado_a = usuario
             tarjeta.save()
+
+            # Crear notificación en base de datos
+            Notificacion.objects.create(
+                usuario=usuario,
+                mensaje=f'El Administrador te ha asignado la tarea: "{tarjeta.titulo}"'
+            )
+
+            # Enviar notificación en tiempo real por WebSocket
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f'tablero_{tarjeta.lista.tablero.id}',
+                {
+                    'type': 'tablero_actualizado',
+                    'data': {
+                        'tipo': 'tarjeta_asignada',
+                        'mensaje': f'El Administrador te ha asignado la tarea: "{tarjeta.titulo}"',
+                        'usuario_id': usuario.id
+                    }
+                }
+            )
         return redirect('tableros:detalle_tablero', tablero_id=tarjeta.lista.tablero.id)
 
     # Solo usuarios normales aparecen en la lista de asignación
     usuarios_normales = User.objects.filter(is_superuser=False)
     return render(request, 'tableros/asignar_tarjeta.html', {
         'tarjeta': tarjeta,
-        'usuarios_normales': usuarios_normales
+        'usuarios_normales': usuarios_normales,
+        'es_admin': request.user.is_superuser
     })
 
 
@@ -106,7 +131,9 @@ def crear_tablero(request):
                 creado_por=request.user
             )
         return redirect('tableros:inicio')
-    return render(request, 'tableros/crear_tablero.html')
+    return render(request, 'tableros/crear_tablero.html', {
+        'es_admin': request.user.is_superuser
+    })
 
 
 @login_required
@@ -121,7 +148,9 @@ def editar_tablero(request, tablero_id):
         tablero.descripcion = request.POST.get('descripcion', tablero.descripcion)
         tablero.save()
         return redirect('tableros:detalle_tablero', tablero_id=tablero.id)
-    return render(request, 'tableros/editar_tablero.html', {'tablero': tablero})
+    return render(request, 'tableros/editar_tablero.html', {
+        'es_admin': request.user.is_superuser
+    })
 
 
 @login_required
@@ -134,7 +163,9 @@ def eliminar_tablero(request, tablero_id):
     if request.method == 'POST':
         tablero.delete()
         return redirect('tableros:inicio')
-    return render(request, 'tableros/eliminar_tablero.html', {'tablero': tablero})
+    return render(request, 'tableros/eliminar_tablero.html', {
+        'es_admin': request.user.is_superuser
+    })
 
 
 # ==================== CRUD LISTAS ====================
@@ -152,7 +183,10 @@ def crear_lista(request, tablero_id):
             posicion = tablero.listas.count()
             Lista.objects.create(nombre=nombre, tablero=tablero, posicion=posicion)
         return redirect('tableros:detalle_tablero', tablero_id=tablero.id)
-    return render(request, 'tableros/crear_lista.html', {'tablero': tablero})
+    return render(request, 'tableros/crear_lista.html', {
+        'tablero': tablero,
+        'es_admin': request.user.is_superuser
+    })
 
 
 @login_required
@@ -189,7 +223,10 @@ def crear_tarjeta(request, lista_id):
                 posicion=posicion
             )
         return redirect('tableros:detalle_tablero', tablero_id=lista.tablero.id)
-    return render(request, 'tableros/crear_tarjeta.html', {'lista': lista})
+    return render(request, 'tableros/crear_tarjeta.html', {
+        'lista': lista,
+        'es_admin': request.user.is_superuser
+    })
 
 
 @login_required
@@ -204,7 +241,10 @@ def editar_tarjeta(request, tarjeta_id):
         tarjeta.descripcion = request.POST.get('descripcion', tarjeta.descripcion)
         tarjeta.save()
         return redirect('tableros:detalle_tablero', tablero_id=tarjeta.lista.tablero.id)
-    return render(request, 'tableros/editar_tarjeta.html', {'tarjeta': tarjeta})
+    return render(request, 'tableros/editar_tarjeta.html', {
+        'tarjeta': tarjeta,
+        'es_admin': request.user.is_superuser
+    })
 
 
 @login_required
@@ -277,3 +317,13 @@ def actualizar_posicion(request):
         return JsonResponse({'status': 'ok'})
     except Exception as e:
         return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=400)
+
+@login_required
+def notificaciones(request):
+    notifs = list(Notificacion.objects.filter(usuario=request.user, leida=False))
+    Notificacion.objects.filter(usuario=request.user, leida=False).update(leida=True)
+    return JsonResponse({
+        'notificaciones': [
+            {'mensaje': n.mensaje} for n in notifs
+        ]
+    })

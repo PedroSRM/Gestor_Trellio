@@ -65,3 +65,19 @@ class Tarjeta(models.Model):
 
     def __str__(self):
         return self.titulo
+
+class Notificacion(models.Model):
+    usuario = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='notificaciones'
+    )
+    mensaje = models.CharField(max_length=300)
+    leida = models.BooleanField(default=False)
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-fecha']
+
+    def __str__(self):
+        return f"{self.usuario.username} — {self.mensaje}"

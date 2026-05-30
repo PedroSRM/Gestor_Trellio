@@ -29,6 +29,9 @@
                     {% endif %}
                     <span class="text-white">{{ user.username }}</span>
                     <a href="{% url 'tableros:mis_tareas' %}" class="btn btn-sm btn-outline-light">Mis Tareas</a>
+                    <button class="btn btn-sm btn-outline-light position-relative" id="btn-notificaciones">
+                        🔔 <span class="badge bg-danger" id="badge-notif" style="display:none;">0</span>
+                    </button>
                     <form method="post" action="{% url 'logout' %}" class="d-inline">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-sm btn-outline-light">Cerrar Sesión</button>
@@ -44,5 +47,34 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     {% block scripts %}{% endblock %}
+    
+        <div id="toast-notif" class="position-fixed bottom-0 end-0 p-3" style="z-index:9999; display:none;">
+            <div class="toast show bg-warning text-dark">
+                <div class="toast-header">
+                    <strong class="me-auto">🔔 Nueva tarea asignada</strong>
+                </div>
+                <div class="toast-body" id="toast-mensaje"></div>
+            </div>
+        </div>
+
+        <script>
+        // Polling de notificaciones cada 5 segundos
+        {% if user.is_authenticated and not user.is_superuser %}
+        setInterval(function() {
+            fetch("{% url 'tableros:notificaciones' %}")
+                .then(r => r.json())
+                .then(data => {
+                    if (data.notificaciones.length > 0) {
+                        const msg = data.notificaciones[0].mensaje;
+                        document.getElementById('toast-mensaje').innerText = msg;
+                        document.getElementById('toast-notif').style.display = 'block';
+                        setTimeout(() => {
+                            document.getElementById('toast-notif').style.display = 'none';
+                        }, 5000);
+                    }
+                });
+        }, 5000);
+        {% endif %}
+        </script>
 </body>
 </html>

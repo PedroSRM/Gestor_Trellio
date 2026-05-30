@@ -29,4 +29,6 @@ urlpatterns = [
     path('registro/', views.registro, name='registro'),
 
     path('actualizar-posicion/', views.actualizar_posicion, name='actualizar_posicion'),
+
+    path('notificaciones/', views.notificaciones, name='notificaciones'),
 ]
